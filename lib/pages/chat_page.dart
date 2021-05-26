@@ -1,4 +1,6 @@
+import 'package:dating/chat_page/chat_detail.dart';
 import 'package:dating/data/chats_json.dart';
+import 'package:dating/model/list_friend_model.dart';
 import 'package:dating/theme/colors.dart';
 import 'package:flutter/material.dart';
 
@@ -96,7 +98,7 @@ class _ChatPageState extends State<ChatPage> {
                 padding: const EdgeInsets.only(left: 15),
                 child: Row(
                     children: List.generate(chats_json.length, (index) {
-                  return Padding(
+                  return  Padding(
                     padding: const EdgeInsets.only(right: 20),
                     child: Column(
                       children: <Widget>[
@@ -179,7 +181,24 @@ class _ChatPageState extends State<ChatPage> {
                 children: List.generate(userMessages.length, (index) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 20),
-                    child: Row(
+                    child: TextButton(
+                      style: ButtonStyle(
+                          backgroundColor: MaterialStateColor
+                              .resolveWith((states) =>
+                          Colors.transparent),
+                          padding: MaterialStateProperty.resolveWith((
+                              states) => EdgeInsets.fromLTRB(0, 0, 0, 0))
+                      ),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ChatDetail(friendItem: ListFriendModel(
+                        id: 30,
+                        createdAt: "2019-10-08T06:23:16.795Z",
+                        name: "Wanda Upton",
+                        imageAvatarUrl:
+                        "assets/images/girls/img_2.jpeg",
+                        shortDescription: "Avon withdrawal",
+                        isActive: true,
+                      ),))),
+                      child: Row(
                       children: <Widget>[
                         Container(
                           width: 70,
@@ -265,7 +284,7 @@ class _ChatPageState extends State<ChatPage> {
                         )
                       ],
                     ),
-                  );
+                  ));
                 }),
               ),
             )

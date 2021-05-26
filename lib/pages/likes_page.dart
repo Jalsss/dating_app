@@ -1,13 +1,40 @@
+import 'dart:async';
+
 import 'package:dating/data/likes_json.dart';
 import 'package:dating/theme/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart' as p;
 
 class LikesPage extends StatefulWidget {
+  const LikesPage({Key key}) : super(key: key);
+
   @override
   _LikesPageState createState() => _LikesPageState();
 }
 
 class _LikesPageState extends State<LikesPage> {
+  Completer<GoogleMapController> _controller = Completer();
+  p.Location location = new p.Location();
+
+  static p.LocationData _locationData;
+
+  bool _serviceEnabled;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getLocation();
+  }
+
+  CameraPosition _kGooglePlex = CameraPosition(
+    target: LatLng(21.0226313, 105.8422716),
+    zoom: 14.4746,
+  );
+
+  Set<Marker> _marker = {};
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,133 +44,54 @@ class _LikesPageState extends State<LikesPage> {
     );
   }
 
+  _onMapCreated(GoogleMapController controller) {
+    _controller.complete(controller);
+  }
+
   Widget getBody() {
     var size = MediaQuery.of(context).size;
-    return ListView(
-      padding: EdgeInsets.only(bottom: 90),
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Text(
-                likes_json.length.toString() + " Likes",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                "Top Picks",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: black.withOpacity(0.5)),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Divider(
-          thickness: 0.8,
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 5, right: 5),
-          child: Wrap(
-            spacing: 5,
-            runSpacing: 5,
-            children: List.generate(likes_json.length, (index) {
-              return Container(
-                width: (size.width - 15) / 2,
-                height: 250,
-                child: Stack(
-                  children: [
-                    Container(
-                      width: (size.width - 15) / 2,
-                      height: 250,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          image: DecorationImage(
-                              image: AssetImage((likes_json[index]['img'])),
-                              fit: BoxFit.cover)),
-                    ),
-                    Container(
-                      width: (size.width - 15) / 2,
-                      height: 250,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          gradient: LinearGradient(
-                              colors: [
-                                black.withOpacity(0.25),
-                                black.withOpacity(0),
-                              ],
-                              end: Alignment.topCenter,
-                              begin: Alignment.bottomCenter)),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          likes_json[index]['active']
-                              ? Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 8, bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                            color: green,
-                                            shape: BoxShape.circle),
-                                      ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      Text(
-                                        "Recently Active",
-                                        style: TextStyle(
-                                          color: white,
-                                          fontSize: 14,
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                )
-                              : Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 8, bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                            color: grey,
-                                            shape: BoxShape.circle),
-                                      ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      Text(
-                                        "Offline",
-                                        style: TextStyle(
-                                          color: white,
-                                          fontSize: 14,
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              );
-            }),
-          ),
-        )
-      ],
-    );
+    return Container(
+        child: GoogleMap(
+      mapType: MapType.normal,
+      initialCameraPosition: _kGooglePlex,
+      markers: _marker,
+      onMapCreated: (GoogleMapController controller) {
+        _onMapCreated(controller);
+      },
+      myLocationEnabled: true,
+    ));
+  }
+
+  getLocation() async {
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+
+    _locationData = await location.getLocation();
+    setState(() {
+      _kGooglePlex = CameraPosition(
+        target: LatLng(_locationData.latitude, _locationData.longitude),
+        zoom: 14.4746,
+      );
+    });
+    GoogleMapController controller = await _controller.future;
+    controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+      target: LatLng(_locationData.latitude, _locationData.longitude),
+      zoom: 14.4746,
+    )));
+  }
+
+  findAround() {
+    setState(() {
+      _marker.add(Marker(
+          position: LatLng(_locationData.latitude, _locationData.longitude),
+          infoWindow: InfoWindow(title: 'Hello', snippet: 'Good Job'),
+          markerId: MarkerId('id-1')));
+    });
   }
 
   Widget getFooter() {
@@ -155,7 +103,8 @@ class _LikesPageState extends State<LikesPage> {
         padding: const EdgeInsets.only(top: 10),
         child: Column(
           children: [
-            Container(
+        TextButton(
+        child:Container(
               width: size.width - 70,
               height: 50,
               decoration: BoxDecoration(
@@ -168,7 +117,8 @@ class _LikesPageState extends State<LikesPage> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
               ),
-            )
+            ),
+          onPressed: () => findAround(),)
           ],
         ),
       ),
